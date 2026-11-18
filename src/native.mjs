@@ -75,8 +75,10 @@ export class NativeClient {
 
 export function operationId() { return `${Date.now()}-${randomUUID().replaceAll('-','')}`; }
 export function nativeSessions(workspace) {
-  return (workspace?.agents ?? []).filter(a=>a.structuredHostOwned).flatMap(a=>{
-    const match=/^structured-agent-session-([a-zA-Z0-9_]+):/.exec(a.paneKey ?? '');
+  return (workspace?.agents ?? []).flatMap(a=>{
+    // Host-owned pane keys identify native chats even when optional status
+    // metadata is absent (for example after a session is restored).
+    const match=/^structured-agent-session-((?:claude|codex)_[a-zA-Z0-9_]+):/.exec(a.paneKey ?? '');
     return match ? [{id:match[1], title:a.conversationName ?? a.agentType ?? 'Chat', state:a.state}] : [];
   });
 }

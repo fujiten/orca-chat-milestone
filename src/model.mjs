@@ -28,7 +28,7 @@ export function nextActions(text) {
 }
 export function project(page) {
   const tasks=new Map();
-  let progress=null, taskSequence=-1, snapshotSequence=-1;
+  let progress=null, taskSequence=-1, snapshotSequence=-1, reportItem=null;
   for (const item of page.items ?? []) {
     const b=item.body;
     if (b?.kind==='message' && b.role==='assistant') {
@@ -39,7 +39,11 @@ export function project(page) {
     }
     if (b?.kind!=='tool-call' || b.state!=='completed' || b.isError || b.output?.isError) continue;
     const input=b.input ?? {};
-    if (b.name==='TaskCreate') {
+    if (b.name===REPORT_TOOL && validateReport(input)) {
+      progress=input.tasks.length?{goal:input.goal,tasks:input.tasks}:null;
+      snapshotSequence=item.sequence;
+      reportItem=item;
+    } else if (b.name==='TaskCreate') {
       let output=b.output;
       try {if(typeof output==='string') output=JSON.parse(output);} catch {}
       const id=output?.task?.id ?? /Task #([\w-]+)/.exec(outputText(b.output))?.[1];
@@ -68,13 +72,18 @@ export function project(page) {
     progress={goal:goal ?? '作業の進捗',tasks:all.filter(t=>!goal || !t.metadata?.goal || t.metadata.goal===goal)};
   }
   const currentTurnId=page.latestTurn?.itemId;
+  const progressSource=(page.items ?? []).find(i=>i.sequence===Math.max(taskSequence,snapshotSequence));
+  const previousProgress=!!progress && !!currentTurnId && progressSource?.turnScope?.turnItemId!==currentTurnId;
   const assistant=(page.items ?? []).filter(i=>i.body?.kind==='message' && i.body.role==='assistant' && (!currentTurnId || i.turnScope?.turnItemId===currentTurnId)).at(-1);
   const pending=(page.items ?? []).filter(i=>page.actionablePromptIds?.includes(i.itemId) && (!i.body?.resolution || i.body.resolution.state==='pending'));
   const prompts=pending.filter(i=>i.body?.kind==='question');
   const approvals=pending.filter(i=>i.body?.kind!=='question');
-  return {progress,questions:prompts,approvals,offers:!page.working && !page.actionablePromptIds?.length && assistant ? nextActions(textOf(assistant.body)):[],working:page.working===true};
+  const reportOffers=reportItem && (!currentTurnId || reportItem.turnScope?.turnItemId===currentTurnId)?reportItem.body.input.nextActions ?? []:null;
+  const offers=!page.working && !page.actionablePromptIds?.length ? reportOffers ?? (assistant?nextActions(textOf(assistant.body)):[]):[];
+  return {progress,questions:prompts,approvals,offers,working:page.working===true,reportRecorded:!!reportItem,previousProgress};
 }
 export function questionsOf(item) {
   const b=item.body;
   return b.questions ?? [{id:b.freeTextQuestionId ?? 'q1',question:b.question,options:b.options ?? [],multiSelect:false,...b.freeTextQuestionId?{freeTextQuestionId:b.freeTextQuestionId}:{},...b.freeTextInput?{freeTextInput:b.freeTextInput}:{}}];
 }
+import {REPORT_TOOL,validateReport} from './report.mjs';

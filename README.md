@@ -7,6 +7,7 @@ Orcaの**チャット形式**で、進捗・質問・次の操作を右サイド
 - macOS / Orca **1.4.261**で確認
 - Claudeのネイティブチャット。Codexの`update_plan`も読み取りますが、Codexでの実機確認は未実施
 - Node.js 22以上（開始時の指示を設定する場合）
+- Claude Code CLI（専用のローカルMCPを登録する場合）
 - npmパッケージへの依存はありません
 
 **Orcaの公開プラグインAPIはまだチャットへの送信・質問回答を提供していません。** `src/native.mjs`だけがOrca同梱のローカル接続クライアントと内部チャットAPIに依存します。Orca更新後は互換性の再確認が必要です。Orca本体を変更したり、権限チェックを無効化したりはしません。
@@ -27,10 +28,13 @@ Orcaのプラグイン設定で、この開発用プラグインの内容と権�
 
 ```sh
 node scripts/configure.mjs
+node scripts/configure-mcp.mjs
 orca plugin open fujiten.chat-milestone
 ```
 
-設定処理はClaudeの`settings.json`にSessionStartフックだけを追加し、元の設定を同じ設定ディレクトリの`chat-milestone-backups/`に保存します。既存のフックや承認設定は維持します。フックは`ORCA_STRUCTURED_SESSION`と`ORCA_AGENT_SESSION_ID`がある場合だけ追加の表示指示を返し、Orca以外のClaudeには何も追加しません。
+設定処理はClaudeの`settings.json`にSessionStartとUserPromptSubmitの表示用フックを追加し、元の設定を同じ設定ディレクトリの`chat-milestone-backups/`に保存します。開始時だけでなく次の依頼にも短い指示を渡し、記録忘れを減らします。既存のフックや承認設定は維持します。フックは`ORCA_STRUCTURED_SESSION`と`ORCA_AGENT_SESSION_ID`がある場合だけ追加の表示指示を返し、Orca以外のClaudeには何も追加しません。
+
+`configure-mcp.mjs`はClaudeの公式CLIを通じて`orca_chat_milestone`という専用のローカルMCPをユーザー設定に登録します。唯一のツール`update_panel`は表示内容を検証して受け取るだけです。ファイル変更・シェル実行・外部通信の機能はなく、Orca以外ではツールを公開しません。設定後に開始したチャットで利用できます。
 
 導入前から開いている会話では、パネルの**「この会話で進捗表示を有効にする」**を一度押します。現在の会話に表示形式の指示を送り、現状を整理します。追加調査や実装を開始する依頼ではありません。
 
@@ -38,12 +42,13 @@ orca plugin open fujiten.chat-milestone
 
 - 旗アイコンにマウスを置き、**Chat Milestone**と表示される方を開きます。元のMilestoneとは別のパネルです。
 - ワークスペースの切替に追従します。会話が複数ある場合はパネル上部で選べます。
-- Claudeが出したタスクの記録、または`milestone`ブロックを表示します。ログから完了を推測しません。
+- Claudeが専用の`update_panel`ツールで記録した進捗と次の操作を表示します。会話本文にパネル用JSONを出させず、ログから完了を推測しません。
+- 古いターンの記録しかない場合は、「前の依頼の記録です」と表示します。
 - 質問の選択肢・自由入力をパネルから送れます。承認が必要な操作はチャット側で確認します。
 - 次の操作を押すと、表示された依頼文をその会話に送ります。送る前に「送信する依頼」を確認できます。
 - 2秒ごとに更新します。長い会話は直近2000項目まで読み取ります。
 
-`milestone` / `next`ブロックはチャット本文にも表示されます。タスク用ツールを利用できないモデルでも進捗を記録するための方式です。AIが記録を省略すると進捗は更新されません。
+AIが専用ツールへの記録を省略すると進捗は更新されません。古い会話にすでに出たJSONは会話履歴として残りますが、0.2.0以降の指示では本文に出力しません。旧バージョンの`milestone` / `next`ブロックやタスク記録は過去の会話を表示するために読み取れます。
 
 ## データと操作
 
@@ -60,6 +65,7 @@ orca plugin open fujiten.chat-milestone
 開始時の表示指示を外す場合は、このフォルダで実行します。
 
 ```sh
+node scripts/configure-mcp.mjs --remove
 node scripts/configure.mjs --remove
 orca plugin dev unload .
 ```

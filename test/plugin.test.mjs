@@ -81,6 +81,7 @@ test('each button is dispatched at most once, including repeated clicks',async()
  const f=fixture(),v=await f.worker.view();const token=/data-action="([a-f0-9]+)"/.exec(v.html)[1];
  await f.worker.action({token});await assert.rejects(()=>f.worker.action({token}));assert.equal(f.sends(),1);
 });
-test('native discovery does not mistake terminal sessions for chats',()=>{
- assert.equal(nativeSessions({agents:[{paneKey:'structured-agent-session-claude_1234:leaf'}]}).length,0);
+test('native discovery accepts omitted optional metadata and rejects terminal pane keys',()=>{
+ assert.equal(nativeSessions({agents:[{paneKey:'structured-agent-session-claude_1234:leaf'}]}).length,1);
+ assert.equal(nativeSessions({agents:[{paneKey:'tab:leaf'}]}).length,0);
 });

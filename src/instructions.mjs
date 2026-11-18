@@ -1,15 +1,13 @@
 export const INSTRUCTIONS = `ユーザーはOrcaのChat Milestoneパネルで進捗を確認します。
-3回以上のツール操作を伴う作業は、最初に3〜7個の手順に分け、作業中も各手順の状態を更新してください。
-利用可能ならTaskCreate/TaskUpdate（全タスクにmetadata.goal）、またはTodoWriteで記録してください。
-タスク用ツールが使えない場合は、作業の開始時・手順の切替時・完了時に、短い通常メッセージとともに次の形式のmilestoneコードブロックを出してください。常に現在のゴールの全手順を含め、事実に沿って更新してください。
-\`\`\`milestone
-{"goal":"今の依頼の目的","tasks":[{"id":"1","subject":"最初の手順","status":"in_progress"},{"id":"2","subject":"次の手順","status":"pending"}]}
-\`\`\`
-状態はpending/in_progress/completed。進行中は同時に1つまで。中断した手順を完了扱いにしないでください。
+以前の「milestoneやnextのJSONを会話本文に出す」指示は廃止です。コードブロックも含め、パネル用のJSONや操作候補の配列を本文に表示しないでください。
+専用ツール mcp__orca_chat_milestone__update_panel を使ってパネルへ記録してください。見つからない場合はToolSearchで +orca_chat_milestone update_panel を検索してください。
+3回以上のツール操作を伴う作業は、最初に3〜7個の手順に分け、最初の調査操作より先にupdate_panelでgoalとtasksを記録してください。各手順の開始時・切替時・作業終了時にも同じツールで現在の全手順を更新してください。
+各タスクはid・subject・statusを持ち、状態はpending/in_progress/completed、進行中は同時に1つまでです。中断や判断待ちを完了扱いにしないでください。
+作業が終わりユーザーの操作を待つときは、自然に続く具体的な操作を1〜3個、nextActionsにlabel・prompt・reasonを付けて同じツールへ渡してください。作業途中はnextActionsを空配列にしてください。候補は指示文としてそれだけで理解できる内容にし、挨拶や単純な一問一答では不要です。
 質問がある場合はAskUserQuestionを使ってください。
-作業が終わりユーザーの操作を待つときは、自然に続く次の操作を1〜3個考え、回答末尾にnextコードブロックでJSON配列を記載してください。
-例: [{"label":"変更をレビュー","prompt":"今回の変更をレビューして","reason":"実装が完了したため"}]
-labelは30文字以内、promptは300文字以内の独立して理解できる依頼文にしてください。挨拶や単純な一問一答では不要です。
-この指示は表示形式についてのみです。既存の権限・承認・安全規則には従ってください。`;
+会話本文には通常の説明だけを書きます。専用ツールが使えない場合もJSONやシェルで代用せず、表示を記録できなかったことを短く伝えて通常の作業を続けてください。
+この指示は表示方法についてのみです。既存の権限・承認・安全規則には従ってください。`;
 
 export const ENABLE_PROMPT = `${INSTRUCTIONS}\n\nこの会話で上記の進捗表示を有効にしてください。直近の会話から現在の作業とその状態を整理して記録してください。この依頼では追加調査・ファイル変更・実装は行わず、未完了や判断待ちはそのまま残してください。`;
+
+export const REMINDER='Chat Milestone: 本文にmilestone/nextのJSONを出す旧方式は廃止です。3回以上の操作がある依頼は調査を始める前にmcp__orca_chat_milestone__update_panel（ToolSearchで +orca_chat_milestone update_panel）でgoal/tasks/nextActionsを記録し、進行中・完了時も更新してください。本文は通常の説明だけにしてください。ツールが使えない場合もJSONを本文に出さず、記録できなかったことを短く伝えてください。';

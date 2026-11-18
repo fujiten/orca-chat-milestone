@@ -10,8 +10,9 @@ export function render(view, route) {
   html+=`<p class="subtle">${esc(view.session.title)}</p>`;
   if (view.progress) {
     const done=view.progress.tasks.filter(t=>t.status==='completed').length,total=view.progress.tasks.length;
-    html+=`<section><h2>${esc(view.progress.goal)}</h2><div class="count">${done} / ${total}</div><progress max="${total}" value="${done}"></progress><ol>${view.progress.tasks.map(t=>`<li class="${esc(t.status)}"><span>${t.status==='completed'?'✓':t.status==='in_progress'?'●':'○'}</span>${esc(t.subject)}</li>`).join('')}</ol></section>`;
-  } else html+=`<section><h2>進捗の記録待ち</h2><p>この会話で進捗表示を有効にすると、現在の作業状況を整理します。</p>${!view.working?button('この会話で進捗表示を有効にする',route('enable',{})):'<p class="subtle">実行中の作業が終わるまで待っています。</p>'}</section>`;
+    html+=`<section>${view.previousProgress?'<p class="notice">前の依頼の記録です。今回の進捗はまだ届いていません。</p>':''}<h2>${esc(view.progress.goal)}</h2><div class="count">${done} / ${total}</div><progress max="${total}" value="${done}"></progress><ol>${view.progress.tasks.map(t=>`<li class="${esc(t.status)}"><span>${t.status==='completed'?'✓':t.status==='in_progress'?'●':'○'}</span>${esc(t.subject)}</li>`).join('')}</ol></section>`;
+  } else if(view.reportRecorded) html+='<section><p>この依頼には進捗項目がありません。</p></section>';
+  else html+=`<section><h2>進捗の記録待ち</h2><p>この会話で進捗表示を有効にすると、現在の作業状況を整理します。</p>${!view.working?button('この会話で進捗表示を有効にする',route('enable',{})):'<p class="subtle">実行中の作業が終わるまで待っています。</p>'}</section>`;
   for (const item of view.questions ?? []) {
     html+=`<section><h2>質問</h2><form data-question="${esc(route('answer',{itemId:item.itemId,revision:item.revision}))}">`;
     for (const [qi,q] of questionsOf(item).entries()) {

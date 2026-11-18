@@ -18,19 +18,22 @@ test('setup preserves existing settings, is idempotent, and removes only its own
   const settings=JSON.parse(first);
   assert.deepEqual(settings.permissions,original.permissions);assert.deepEqual(settings.env,original.env);
   assert.equal(settings.hooks.SessionStart.length,2);assert.deepEqual(settings.hooks.Stop,original.hooks.Stop);
+  assert.equal(settings.hooks.UserPromptSubmit.length,1);
   run();assert.equal(await readFile(join(dir,'settings.json'),'utf8'),first);
   run('--remove');assert.deepEqual(JSON.parse(await readFile(join(dir,'settings.json'),'utf8')),original);
   assert.equal((await readdir(join(dir,'chat-milestone-backups'))).length,2);
  }finally{await rm(dir,{recursive:true,force:true});}
 });
-test('SessionStart instructions are confined to Orca native chats',()=>{
- const script=resolve('scripts/session-start.mjs');
+test('display instructions for both hook events are confined to Orca native chats',()=>{
  const base={...process.env};delete base.ORCA_STRUCTURED_SESSION;delete base.ORCA_AGENT_SESSION_ID;
+ for(const [file,event] of [['session-start.mjs','SessionStart'],['prompt-submit.mjs','UserPromptSubmit']]){
+ const script=resolve('scripts',file);
  const outside=spawnSync(process.execPath,[script],{env:base,encoding:'utf8'});
  assert.equal(outside.status,0);assert.equal(outside.stdout,'');
  const inside=spawnSync(process.execPath,[script],{env:{...base,ORCA_STRUCTURED_SESSION:'1',ORCA_AGENT_SESSION_ID:'test'},encoding:'utf8'});
  assert.equal(inside.status,0);
  const result=JSON.parse(inside.stdout);
- assert.equal(result.hookSpecificOutput.hookEventName,'SessionStart');
+ assert.equal(result.hookSpecificOutput.hookEventName,event);
  assert(result.hookSpecificOutput.additionalContext.includes('milestone'));
+ }
 });
