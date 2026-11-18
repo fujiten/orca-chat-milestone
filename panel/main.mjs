@@ -11,7 +11,7 @@ async function act(token,answers){
   if(busy) return;
   busy=true;message.textContent='送信しています…';
   view.querySelectorAll('button').forEach(b=>b.disabled=true);
-  try{await window.orca.plugin.request('action',{token,answers});message.textContent='送信しました。';}
+  try{await window.orca.plugin.request('action',{token,...answers===undefined?{}:{answers}});message.textContent='送信しました。';}
   catch(e){message.textContent=e.message ?? '送信できませんでした。チャット画面を確認してください。';}
   finally{busy=false;html='';await refresh();}
 }
