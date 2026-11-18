@@ -1,0 +1,20 @@
+{
+  "manifestVersion": 2,
+  "execution": "trusted-worker",
+  "id": "chat-milestone",
+  "publisher": "fujiten",
+  "name": "Chat Milestone",
+  "version": "0.1.0",
+  "description": "Orcaのチャットの進捗・質問・次の操作を表示します。",
+  "author": {"name": "fujiten"},
+  "repository": "https://github.com/fujiten/orca-chat-milestone",
+  "license": "MIT",
+  "engines": {"orca": ">=1.4.261"},
+  "pluginApi": 1,
+  "main": "main.mjs",
+  "contributes": {
+    "panels": [{"id": "chat-progress", "title": "Chat Milestone", "icon": "flag", "entry": "panel/index.html"}],
+    "events": [{"on": "workspace.changed"}, {"on": "agent.status.changed"}]
+  },
+  "capabilities": [{"kind": "workspace:read"}, {"kind": "agent:read"}, {"kind": "storage:own"}]
+}
